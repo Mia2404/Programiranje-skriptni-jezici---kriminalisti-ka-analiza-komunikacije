@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="hr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Analiza komunikacije</title>
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 960px; margin: 2rem auto; padding: 0 1rem; color: #1f2933; }
+        h1 { margin-bottom: .25rem; }
+        .podnaslov { color: #616e7c; margin-top: 0; }
+        .kartice { display: flex; gap: 1rem; flex-wrap: wrap; margin: 1.5rem 0; }
+        .kartica { background: #f5f7fa; border-radius: 8px; padding: .75rem 1.25rem; }
+        .kartica b { display: block; font-size: 1.4rem; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 2rem; font-size: .9rem; }
+        th, td { text-align: left; padding: .4rem .6rem; border-bottom: 1px solid #e4e7eb; }
+        th { background: #f5f7fa; }
+        td.broj { font-family: monospace; }
+    </style>
+</head>
+<body>
+    <h1>Kriminalistička analiza komunikacije</h1>
+    <p class="podnaslov">Mreža kontakata i promjene u ponašanju</p>
+
+    {% if nema_podataka %}
+        <p>Baza još ne postoji. Pokreni <code>python main.py generiraj</code>.</p>
+    {% else %}
+        <div class="kartice">
+            <div class="kartica"><b>{{ statistika.zapisa }}</b>zapisa</div>
+            <div class="kartica"><b>{{ statistika.brojeva }}</b>brojeva</div>
+            <div class="kartica"><b>{{ statistika.veza }}</b>veza</div>
+            <div class="kartica"><b>{{ statistika.od }} – {{ statistika.do }}</b>razdoblje</div>
+        </div>
+
+        <h2>Ključne osobe</h2>
+        <table>
+            <tr><th>Broj</th><th>Ime</th><th>Stupanj</th><th>Posredništvo</th><th>Blizina</th><th>PageRank</th></tr>
+            {% for r in centralnost %}
+            <tr>
+                <td class="broj">{{ r.broj }}</td><td>{{ r.ime }}</td>
+                <td>{{ r.stupanj }}</td><td>{{ r.posrednistvo }}</td>
+                <td>{{ r.blizina }}</td><td>{{ r.pagerank }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        <h2>Neuobičajeni porasti aktivnosti</h2>
+        <table>
+            <tr><th>Broj</th><th>Ime</th><th>Dan</th><th>Z-vrijednost</th></tr>
+            {% for r in promjene %}
+            <tr>
+                <td class="broj">{{ r.broj }}</td><td>{{ r.ime }}</td>
+                <td>{{ r.dan.date() }}</td><td>{{ r.z }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4">Nema otkrivenih promjena.</td></tr>
+            {% endfor %}
+        </table>
+    {% endif %}
+</body>
+</html>
