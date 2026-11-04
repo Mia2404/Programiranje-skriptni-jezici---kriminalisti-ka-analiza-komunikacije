@@ -1,6 +1,7 @@
 import argparse
+from pathlib import Path
 
-from src import analysis, database, generator
+from src import analysis, database, generator, vast
 
 
 def naredba_generiraj(args):
@@ -10,9 +11,17 @@ def naredba_generiraj(args):
     print(f"Baza spremljena u: {database.DB_PUTANJA}")
 
 
+def naredba_ucitaj_vast(args):
+    df_osobe, df_stanice, df_kom = vast.ucitaj(Path(args.csv))
+    database.spremi(df_osobe, df_stanice, df_kom, putanja=vast.VAST_DB_PUTANJA)
+    print(f"Učitano {len(df_osobe)} brojeva i {len(df_kom)} zapisa komunikacije.")
+    print(f"Baza spremljena u: {vast.VAST_DB_PUTANJA}")
+
+
 def naredba_analiziraj(args):
-    df_kom = database.ucitaj_komunikaciju()
-    osobe = database.ucitaj_osobe().set_index("broj")["ime"]
+    putanja = vast.VAST_DB_PUTANJA if args.baza == "vast" else database.DB_PUTANJA
+    df_kom = database.ucitaj_komunikaciju(putanja)
+    osobe = database.ucitaj_osobe(putanja).set_index("broj")["ime"]
 
     G = analysis.izgradi_graf(df_kom)
     print(f"\nMreža: {G.number_of_nodes()} čvorova, {G.number_of_edges()} veza\n")
@@ -42,7 +51,12 @@ def main():
     p_gen.add_argument("--seed", type=int, default=generator.SEED)
     p_gen.set_defaults(func=naredba_generiraj)
 
+    p_vast = sub.add_parser("ucitaj-vast", help="učitava VAST 2008 CSV s pozivima u zasebnu bazu")
+    p_vast.add_argument("--csv", default="data/CellPhoneCallRecords.csv")
+    p_vast.set_defaults(func=naredba_ucitaj_vast)
+
     p_an = sub.add_parser("analiziraj", help="pokreće analizu nad bazom")
+    p_an.add_argument("--baza", choices=["sinteticka", "vast"], default="sinteticka")
     p_an.set_defaults(func=naredba_analiziraj)
 
     args = parser.parse_args()
