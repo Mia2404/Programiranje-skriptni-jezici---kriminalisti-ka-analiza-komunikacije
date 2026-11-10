@@ -79,8 +79,64 @@ python main.py ucitaj sve
 
 python main.py analiziraj --baza vast2008
 python main.py analiziraj --baza montagna
+
+python main.py evaluiraj --baza vast2008
+python main.py evaluiraj --baza montagna
+
 python app.py                      # web sučelje na http://127.0.0.1:5000
+
+python -m pytest                   # automatski testovi
 ```
+
+## Metode analize i njihove postavke
+
+Postavke su odabrane unaprijed i jednake su za sve skupove podataka; ne prilagođavaju se rezultatima.
+
+| Metoda | Postavka |
+|---|---|
+| mreža kontakata | dvije osobe su povezane ako su barem jednom komunicirale; težina veze je broj kontakata |
+| centralnost | stupanj, posredništvo, blizina i PageRank (networkx); za posredništvo i blizinu udaljenost je 1 / težina |
+| noćna aktivnost | udio odlaznih kontakata između 22:00 i 03:59 |
+| nagli porasti | dnevni broj odlaznih kontakata uspoređuje se s prosjekom prethodnih 7 dana; porast je z > 3 |
+| novi brojevi | brojevi koji se prvi put pojavljuju nakon prve četvrtine promatranog razdoblja |
+
+Granica za nove brojeve izražena je kao udio razdoblja, a ne kao fiksan broj dana, jer skupovi traju
+različito dugo (VAST 2008 10 dana, VAST 2018 oko 2,6 godina).
+
+## Provjera rezultata (`evaluiraj`)
+
+Naredba `evaluiraj` pokreće sve metode analize i tek nakon toga uspoređuje njihove rezultate s
+rješenjem. Metode rješenje ne vide.
+
+Za svaku metodu ispisuje se:
+
+| Stupac | Značenje |
+|---|---|
+| `oznaceno` | koliko je osoba metoda izdvojila (kod rangiranja prvih *k*, zadano 10) |
+| `pogodaka` | koliko ih je u rješenju |
+| `izvan_rjesenja` | koliko ih nije u rješenju |
+| `nepoznato` | za koliko njih izvor ne navodi ishod (samo Montagna) |
+| `preciznost` | pogodaka / (pogodaka + izvan rješenja) |
+| `odziv` | pogodaka / broj svih osoba iz rješenja u mreži |
+| `ocekivano_slucajno` | koliko bi pogodaka u prosjeku dao nasumičan odabir istog broja osoba |
+
+Što se smatra rješenjem:
+
+- **VAST 2008:** 10 brojeva iz službenog rješenja (5 osoba, stari i novi broj). Svi ostali brojevi
+  su "izvan rješenja". Službeno rješenje ne tvrdi da su ostali brojevi nevini (npr. brojevi 97 i 137
+  komuniciraju s brojem 200), pa "izvan rješenja" ne znači nužno "nedužan".
+- **Montagna:** "u rješenju" su osobe kojima je sud odredio uhićenje, zatvor ili kućni pritvor te
+  osobe u bijegu; "izvan rješenja" su osobe kojima je zahtjev za uhićenje odbijen, za koje nema dovoljno
+  dokaza ili koje nisu umiješane; za ostale izvor ne navodi ishod ("nepoznato").
+- **VAST 2018:** 20 osoba s insajderova popisa (provjera još nije moguća jer analiza nije prilagođena
+  veličini podataka).
+
+Ispisuje se i rang svake osobe iz rješenja po posredništvu, što ne ovisi o odabranom *k*.
+
+Izjednačene vrijednosti: osobe s istom vrijednošću mjere (zaokruženom na 12 decimala) dijele isti rang
+(npr. u Montagni 106 od 144 osobe ima posredništvo 0 i sve dijele rang 39). Kod odabira prvih *k*
+uključuju se i sve osobe izjednačene s *k*-tom, pa metoda može označiti više od *k* osoba. Tako
+rezultat ne ovisi o redoslijedu zapisa ni o verziji biblioteka.
 
 ## Model podataka
 

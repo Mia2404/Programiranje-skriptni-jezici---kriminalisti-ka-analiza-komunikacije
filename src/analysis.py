@@ -58,10 +58,11 @@ def promjene_ponasanja(df_kom: pd.DataFrame, prozor: int = 7, prag: float = 3.0)
     return rezultat.reset_index(drop=True)
 
 
-def novi_brojevi(df_kom: pd.DataFrame, nakon_dana: int = 14) -> pd.DataFrame:
+def novi_brojevi(df_kom: pd.DataFrame, udio: float = 0.25) -> pd.DataFrame:
     prvo = pd.concat([
         df_kom[["pozivatelj", "vrijeme"]].rename(columns={"pozivatelj": "broj"}),
         df_kom[["primatelj", "vrijeme"]].rename(columns={"primatelj": "broj"}),
     ]).groupby("broj")["vrijeme"].min()
-    granica = df_kom["vrijeme"].min() + pd.Timedelta(days=nakon_dana)
-    return prvo[prvo > granica].rename("prvo_pojavljivanje").reset_index()
+    pocetak, kraj = df_kom["vrijeme"].min(), df_kom["vrijeme"].max()
+    granica = pocetak + (kraj - pocetak) * udio
+    return prvo[prvo > granica].sort_values().rename("prvo_pojavljivanje").reset_index()

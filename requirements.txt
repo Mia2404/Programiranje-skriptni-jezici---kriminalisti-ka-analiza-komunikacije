@@ -4,3 +4,4 @@ scipy>=1.10
 flask>=3.0
 folium>=0.15
 pyvis>=0.3
+pytest>=7.0

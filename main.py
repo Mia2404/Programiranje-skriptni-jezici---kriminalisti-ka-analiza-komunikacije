@@ -1,6 +1,8 @@
 import argparse
 
-from src import analysis, database, montagna, vast2008, vast2018
+import pandas as pd
+
+from src import analysis, database, evaluacija, montagna, vast2008, vast2018
 
 UCITAVACI = {
     "vast2008": vast2008.ucitaj,
@@ -65,6 +67,33 @@ def naredba_analiziraj(args):
     print(novi.to_string() if not novi.empty else "Nema.")
 
 
+def naredba_evaluiraj(args):
+    if args.baza == "vast2018":
+        print("Provjera za vast2018 još nije moguća jer analiza nije prilagođena veličini podataka.")
+        return
+
+    tablica, rang, oz = evaluacija.evaluiraj(args.baza, k=args.k)
+    pozitivnih = int((oz == evaluacija.POZITIVNO).sum())
+    print(f"\nSkup: {args.baza}")
+    print(f"Osoba u mreži: {len(oz)}")
+    print(f"U rješenju: {pozitivnih}, izvan rješenja: {int((oz == evaluacija.IZVAN).sum())}, "
+          f"nepoznato: {int((oz == evaluacija.NEPOZNATO).sum())}")
+    if args.baza == "montagna":
+        print("U rješenju = osobe kojima je sud odredio uhićenje, zatvor ili kućni pritvor, ili su u bijegu.")
+        print("Izvan rješenja = odbijen zahtjev za uhićenje, nedostatak dokaza ili nije umiješan.")
+        print("Nepoznato = ishod nije naveden u izvoru.")
+
+    prikaz = tablica.copy()
+    for stupac in ("preciznost", "odziv"):
+        prikaz[stupac] = prikaz[stupac].map(lambda v: "–" if pd.isna(v) else f"{v:.0%}")
+    prikaz["ocekivano_slucajno"] = prikaz["ocekivano_slucajno"].round(2)
+    print("\nRezultati po metodi:")
+    print(prikaz.to_string(index=False))
+
+    print(f"\nRang osoba iz rješenja po posredništvu (od {len(oz)}; izjednačene osobe dijele isti rang):")
+    print(rang.to_string(index=False))
+
+
 def main():
     parser = argparse.ArgumentParser(description="Kriminalistička analiza komunikacije")
     sub = parser.add_subparsers(dest="naredba", required=True)
@@ -76,6 +105,11 @@ def main():
     p_an = sub.add_parser("analiziraj", help="pokreće analizu nad bazom")
     p_an.add_argument("--baza", choices=list(database.BAZE), default="vast2008")
     p_an.set_defaults(func=naredba_analiziraj)
+
+    p_ev = sub.add_parser("evaluiraj", help="uspoređuje rezultate analize s rješenjem")
+    p_ev.add_argument("--baza", choices=list(database.BAZE), default="vast2008")
+    p_ev.add_argument("--k", type=int, default=10, help="koliko prvih osoba uzeti kod rangiranja")
+    p_ev.set_defaults(func=naredba_evaluiraj)
 
     args = parser.parse_args()
     args.func(args)
