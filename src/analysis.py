@@ -8,9 +8,9 @@ def izgradi_graf(df_kom: pd.DataFrame) -> nx.Graph:
             a=df_kom[["pozivatelj", "primatelj"]].min(axis=1),
             b=df_kom[["pozivatelj", "primatelj"]].max(axis=1),
         )
-        .groupby(["a", "b"])
-        .size()
-        .reset_index(name="tezina")
+        .groupby(["a", "b"])["tezina"]
+        .sum()
+        .reset_index()
     )
     G = nx.Graph()
     for row in parovi.itertuples(index=False):

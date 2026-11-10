@@ -1,25 +1,42 @@
 import argparse
-from pathlib import Path
 
-from src import analysis, database, generator, vast
+from src import analysis, database, montagna, vast2008, vast2018
 
-
-def naredba_generiraj(args):
-    df_osobe, df_stanice, df_kom = generator.generiraj(seed=args.seed)
-    database.spremi(df_osobe, df_stanice, df_kom)
-    print(f"Generirano {len(df_osobe)} brojeva i {len(df_kom)} zapisa komunikacije.")
-    print(f"Baza spremljena u: {database.DB_PUTANJA}")
+UCITAVACI = {
+    "vast2008": vast2008.ucitaj,
+    "vast2018": vast2018.ucitaj,
+    "montagna": montagna.ucitaj,
+}
 
 
-def naredba_ucitaj_vast(args):
-    df_osobe, df_stanice, df_kom = vast.ucitaj(Path(args.csv))
-    database.spremi(df_osobe, df_stanice, df_kom, putanja=vast.VAST_DB_PUTANJA)
-    print(f"Učitano {len(df_osobe)} brojeva i {len(df_kom)} zapisa komunikacije.")
-    print(f"Baza spremljena u: {vast.VAST_DB_PUTANJA}")
+def naredba_ucitaj(args):
+    nazivi = list(UCITAVACI) if args.skup == "sve" else [args.skup]
+    for naziv in nazivi:
+        print(f"\n[{naziv}] učitavanje...")
+        podaci = UCITAVACI[naziv]()
+        if "neispravni" in podaci and not podaci["neispravni"].empty:
+            print(f"Izbačeno zapisa s negativnim trajanjem: {len(podaci['neispravni'])}")
+        putanja = database.BAZE[naziv]
+        database.spremi(putanja, podaci)
+
+        sazetak = database.sazetak(putanja)
+        print(f"Osoba/brojeva: {sazetak['osoba']}")
+        print(f"Zapisa komunikacije: {sazetak['zapisa']}")
+        print("Po vrsti:", sazetak["po_vrsti"])
+        if sazetak["od"]:
+            print(f"Razdoblje: {sazetak['od']} – {sazetak['do']}")
+        else:
+            print("Razdoblje: podaci nemaju vrijeme")
+        print(f"Zapisa u rješenju (scenarij): {sazetak['scenarij']}")
+        print(f"Baza spremljena u: {putanja}")
 
 
 def naredba_analiziraj(args):
-    putanja = vast.VAST_DB_PUTANJA if args.baza == "vast" else database.DB_PUTANJA
+    putanja = database.BAZE[args.baza]
+    if args.baza == "vast2018":
+        print("Analiza za vast2018 još nije prilagođena veličini podataka (25 milijuna zapisa).")
+        return
+
     df_kom = database.ucitaj_komunikaciju(putanja)
     osobe = database.ucitaj_osobe(putanja).set_index("broj")["ime"]
 
@@ -30,6 +47,10 @@ def naredba_analiziraj(args):
     cent.insert(0, "ime", cent.index.map(osobe))
     print("Top 10 po posredništvu (betweenness):")
     print(cent.head(10).round(3).to_string())
+
+    if df_kom["vrijeme"].isna().all():
+        print("\nPodaci nemaju vrijeme, pa vremenska analiza nije moguća.")
+        return
 
     print("\nTop 5 po noćnoj aktivnosti:")
     print(analysis.nocna_aktivnost(df_kom).head(5).round(2).to_string())
@@ -47,16 +68,12 @@ def main():
     parser = argparse.ArgumentParser(description="Kriminalistička analiza komunikacije")
     sub = parser.add_subparsers(dest="naredba", required=True)
 
-    p_gen = sub.add_parser("generiraj", help="generira sintetičke podatke i sprema ih u bazu")
-    p_gen.add_argument("--seed", type=int, default=generator.SEED)
-    p_gen.set_defaults(func=naredba_generiraj)
-
-    p_vast = sub.add_parser("ucitaj-vast", help="učitava VAST 2008 CSV s pozivima u zasebnu bazu")
-    p_vast.add_argument("--csv", default="data/CellPhoneCallRecords.csv")
-    p_vast.set_defaults(func=naredba_ucitaj_vast)
+    p_uc = sub.add_parser("ucitaj", help="učitava skup podataka u SQLite bazu")
+    p_uc.add_argument("skup", choices=[*UCITAVACI, "sve"])
+    p_uc.set_defaults(func=naredba_ucitaj)
 
     p_an = sub.add_parser("analiziraj", help="pokreće analizu nad bazom")
-    p_an.add_argument("--baza", choices=["sinteticka", "vast"], default="sinteticka")
+    p_an.add_argument("--baza", choices=list(database.BAZE), default="vast2008")
     p_an.set_defaults(func=naredba_analiziraj)
 
     args = parser.parse_args()

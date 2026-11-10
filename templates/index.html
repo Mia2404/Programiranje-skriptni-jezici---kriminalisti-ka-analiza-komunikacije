@@ -20,9 +20,14 @@
 <body>
     <h1>Kriminalistička analiza komunikacije</h1>
     <p class="podnaslov">Mreža kontakata i promjene u ponašanju</p>
+    <p>Skup podataka:
+        <a href="/?baza=vast2008">VAST 2008</a> ·
+        <a href="/?baza=montagna">Montagna</a>
+        (prikazano: <b>{{ baza }}</b>)
+    </p>
 
     {% if nema_podataka %}
-        <p>Baza još ne postoji. Pokreni <code>python main.py generiraj</code>.</p>
+        <p>Baza još ne postoji. Pokreni <code>python main.py ucitaj {{ baza }}</code>.</p>
     {% else %}
         <div class="kartice">
             <div class="kartica"><b>{{ statistika.zapisa }}</b>zapisa</div>
@@ -36,7 +41,7 @@
             <tr><th>Broj</th><th>Ime</th><th>Stupanj</th><th>Posredništvo</th><th>Blizina</th><th>PageRank</th></tr>
             {% for r in centralnost %}
             <tr>
-                <td class="broj">{{ r.broj }}</td><td>{{ r.ime }}</td>
+                <td class="broj">{{ r.broj }}</td><td>{{ r.ime if r.ime == r.ime and r.ime else "" }}</td>
                 <td>{{ r.stupanj }}</td><td>{{ r.posrednistvo }}</td>
                 <td>{{ r.blizina }}</td><td>{{ r.pagerank }}</td>
             </tr>
@@ -48,7 +53,7 @@
             <tr><th>Broj</th><th>Ime</th><th>Dan</th><th>Z-vrijednost</th></tr>
             {% for r in promjene %}
             <tr>
-                <td class="broj">{{ r.broj }}</td><td>{{ r.ime }}</td>
+                <td class="broj">{{ r.broj }}</td><td>{{ r.ime if r.ime == r.ime and r.ime else "" }}</td>
                 <td>{{ r.dan.date() }}</td><td>{{ r.z }}</td>
             </tr>
             {% else %}
