@@ -32,16 +32,15 @@ def ucitaj(putanja_csv: Path = CSV, putanja_stanice: Path = STANICE_CSV) -> dict
     kom = kom[kom["trajanje_s"] >= 0].sort_values("vrijeme").reset_index(drop=True)
 
     brojevi = sorted(set(sirovo["pozivatelj"]) | set(sirovo["primatelj"]), key=int)
-    imena = {b: ime for ime, stari, novi in RJESENJE for b in (stari, novi)}
-    osobe = pd.DataFrame({"broj": brojevi, "ime": [imena.get(b) for b in brojevi]})
+    osobe = pd.DataFrame({"broj": brojevi, "ime": None})
 
     stanice = pd.read_csv(putanja_stanice, dtype={"stanica_id": str})
     stanice = stanice.assign(naziv="Toranj " + stanice["stanica_id"])[["stanica_id", "naziv", "lat", "lon"]]
 
     scenarij = pd.DataFrame(
-        [(b, "član obitelji Catalano/Vidro", ime, None, IZVOR_RJESENJA)
+        [(b, ime, "član obitelji Catalano/Vidro", None, None, IZVOR_RJESENJA)
          for ime, stari, novi in RJESENJE for b in (stari, novi)],
-        columns=["broj", "uloga", "odnos", "ishod", "izvor"],
+        columns=["broj", "ime", "uloga", "odnos", "ishod", "izvor"],
     )
     zamjene = pd.DataFrame(
         [(stari, novi, ime, IZVOR_RJESENJA) for ime, stari, novi in RJESENJE],

@@ -37,6 +37,7 @@ CREATE TABLE komunikacija (
 
 CREATE TABLE scenarij (
     broj        TEXT NOT NULL,
+    ime         TEXT,
     uloga       TEXT,
     odnos       TEXT,
     ishod       TEXT,
@@ -113,8 +114,10 @@ def _citaj(putanja: Path, upit: str, **kwargs) -> pd.DataFrame:
 
 
 def ucitaj_komunikaciju(putanja: Path, tip: str | None = None) -> pd.DataFrame:
-    upit = "SELECT * FROM komunikacija" + (f" WHERE tip = '{tip}'" if tip else "")
-    df = _citaj(putanja, upit)
+    if tip:
+        df = _citaj(putanja, "SELECT * FROM komunikacija WHERE tip = ?", params=(tip,))
+    else:
+        df = _citaj(putanja, "SELECT * FROM komunikacija")
     df["vrijeme"] = pd.to_datetime(df["vrijeme"])
     return df
 

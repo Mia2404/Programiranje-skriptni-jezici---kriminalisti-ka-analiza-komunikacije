@@ -75,6 +75,7 @@ def ucitaj(mapa: Path = MAPA) -> dict:
         raise ValueError(f"U imeniku nisu pronađeni: {', '.join(nisu_pronadeni)}")
     scenarij = pd.DataFrame({
         "broj": [po_imenu[ime] for ime in SUMNJIVA_SKUPINA],
+        "ime": SUMNJIVA_SKUPINA,
         "uloga": "sumnjiva skupina prema insajderu",
         "odnos": None,
         "ishod": None,

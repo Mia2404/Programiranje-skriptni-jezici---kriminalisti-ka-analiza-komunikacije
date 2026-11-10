@@ -14,7 +14,7 @@ Rješenje se koristi samo za provjeru točnosti, nikad u samoj analizi.
 |---|---|---|---|
 | VAST 2008 MC3 | sintetički, izradili organizatori VAST Challengea | 9 834 poziva, 400 brojeva, 30 baznih stanica, 1.–10. 6. 2006. | službeno rješenje (`CellCallsSolution.doc`) |
 | VAST 2018 MC3 | sintetički, izradili organizatori VAST Challengea | 10,6 mil. poziva, 14,6 mil. e-mailova, 762 tis. kupnji, 127 tis. sastanaka, svibanj 2015. – prosinac 2017. | insajderov popis 20 osoba i zapisi koje je označio kao sumnjive |
-| Montagna | stvarni podaci sudskog postupka | 150 prisluškivanih poziva i 289 praćenih sastanaka među osumnjičenima, bez vremena | uloge osoba i ishod postupka (uhićen, u bijegu…) |
+| Montagna | stvarni podaci sudskog postupka | mreža prisluškivanih poziva (150 zapisa veza, ukupno 276 poziva) i praćenih sastanaka (289 zapisa veza, ukupno 456 sastanaka), bez vremena | uloge osoba i ishod postupka (uhićen, u bijegu…) |
 
 ### VAST 2008 – Mini Challenge 3: Cell Phone Calls
 
@@ -26,7 +26,8 @@ Rješenje se koristi samo za provjeru točnosti, nikad u samoj analizi.
   u geografske koordinate pomoću koordinatne mreže ucrtane na karti. U službenom opisu podataka navodi se
   da položaji stanica na karti nisu precizni.
 - Rješenje: imena osoba i zamjene brojeva preuzete su iz službenog rješenja (`CellCallsSolution.doc`),
-  koje navodi da je raspored osoba po brojevima "jedan mogući raspored".
+  koje navodi da je raspored osoba po brojevima "jedan mogući raspored". Imena se spremaju samo u
+  tablicu `scenarij`; analiza radi isključivo s brojevima.
 - 4 zapisa imaju negativno trajanje poziva; pri učitavanju se izbacuju.
 
 ### VAST 2018 – Mini Challenge 3
@@ -40,7 +41,7 @@ Rješenje se koristi samo za provjeru točnosti, nikad u samoj analizi.
 - Vrijeme je u izvornim datotekama zadano u sekundama od 11. 5. 2015. u 14:00 (prema
   `Backgrounder_on_Kasios_International_data.docx`).
 - Sumnjiva skupina: 20 imena iz insajderova pisma (`Insider_letter_to_M_Vogel.docx`).
-- Službeno rješenje nije objavljeno; rezultati se mogu usporediti s objavljenim odgovorima timova.
+- U službenom paketu podataka nema rješenja; rezultati se mogu usporediti s objavljenim odgovorima timova.
 - Uočena nedosljednost: sumnjiva kupnja iz `Suspicious_purchases.csv` (1847246 → 2038003) ima vrijeme
   74 565 933 s, a u `purchases.csv` ista kupnja ima vrijeme 74 525 933 s (razlika 40 000 s).
 
@@ -50,6 +51,17 @@ Rješenje se koristi samo za provjeru točnosti, nikad u samoj analizi.
   https://doi.org/10.5281/zenodo.3938818, licenca CC BY 4.0.
 - Podaci potječu iz rješenja o istražnom zatvoru Suda u Messini (14. 3. 2007.).
 - `data/montagna/` – izvorne datoteke bez izmjena.
+- Svaki redak datoteka s pozivima i sastancima je jedna veza između dvije osobe, a stupac `Weight`
+  je broj poziva odnosno sastanaka. Datoteke sadrže 95 osoba i 120 različitih parova u pozivima te
+  95 osoba i 249 različitih parova u sastancima. Opis skupa na Zenodu navodi drukčije brojeve
+  (100 čvorova i 124 brida za pozive, 101 čvor i 256 bridova za sastanke).
+- Uočene nepravilnosti u izvornim datotekama, koje se pri učitavanju ne mijenjaju:
+  - u pozivima se jednom pojavljuje oznaka `52` umjesto oblika `N52` (veza N18 – 52, težina 4),
+  - u sastancima postoji veza osobe same sa sobom (N47 – N47),
+  - neki parovi se pojavljuju u više redaka (pozivi: N43 – N47, N66 – N61; sastanci: N22 – N18,
+    N43 – N47, N47 – N27); težine takvih redaka se zbrajaju,
+  - osobe `52` i `N35` nemaju redak u datoteci s ulogama, a osoba N154 ima ulogu, ali se ne pojavljuje
+    ni u pozivima ni u sastancima.
 
 ## Pokretanje
 
@@ -80,7 +92,7 @@ Svaki skup podataka sprema se u zasebnu SQLite bazu (`data/vast2008.db`, `data/v
 | `osobe` | broj ili ID osobe i ime, ako je poznato |
 | `bazne_stanice` | identifikator, naziv i koordinate stanice (samo VAST 2008) |
 | `komunikacija` | pozivatelj, primatelj, vrijeme, tip (poziv/email/sastanak/kupnja), trajanje, bazna stanica, težina |
-| `scenarij` | uloge iz rješenja – koristi se samo za provjeru točnosti analize |
+| `scenarij` | imena i uloge iz rješenja – koristi se samo za provjeru točnosti analize |
 | `zamjene_brojeva` | zamjene brojeva iz službenog rješenja (samo VAST 2008) |
 | `insajder_zapisi` | zapisi koje je insajder označio kao sumnjive (samo VAST 2018) |
 

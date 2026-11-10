@@ -35,6 +35,7 @@ def ucitaj(mapa: Path = MAPA) -> dict:
     uloge.columns = [c.strip() for c in uloge.columns]
     scenarij = pd.DataFrame({
         "broj": uloge["Node"].str.strip(),
+        "ime": None,
         "uloga": _tekst(uloge["Role"]),
         "odnos": _tekst(uloge["Relationship"]),
         "ishod": _tekst(uloge["Request"]),
@@ -42,7 +43,7 @@ def ucitaj(mapa: Path = MAPA) -> dict:
     })
 
     cvorovi = sorted(set(kom["pozivatelj"]) | set(kom["primatelj"]) | set(scenarij["broj"]),
-                     key=lambda c: int(c[1:]))
+                     key=lambda c: int(c.lstrip("N")))
     osobe = pd.DataFrame({"broj": cvorovi, "ime": None})
 
     return {

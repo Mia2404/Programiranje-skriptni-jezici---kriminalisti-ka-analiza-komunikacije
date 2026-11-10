@@ -44,7 +44,8 @@ def naredba_analiziraj(args):
     print(f"\nMreža: {G.number_of_nodes()} čvorova, {G.number_of_edges()} veza\n")
 
     cent = analysis.centralnost(G)
-    cent.insert(0, "ime", cent.index.map(osobe))
+    if osobe.notna().any():
+        cent.insert(0, "ime", cent.index.map(osobe))
     print("Top 10 po posredništvu (betweenness):")
     print(cent.head(10).round(3).to_string())
 
