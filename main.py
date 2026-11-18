@@ -2,7 +2,7 @@ import argparse
 
 import pandas as pd
 
-from src import analysis, database, evaluacija, montagna, vast2008, vast2018
+from src import analysis, database, evaluacija, montagna, skupina, vast2008, vast2018
 
 UCITAVACI = {
     "vast2008": vast2008.ucitaj,
@@ -36,7 +36,7 @@ def naredba_ucitaj(args):
 def naredba_analiziraj(args):
     putanja = database.BAZE[args.baza]
     if args.baza == "vast2018":
-        print("Analiza za vast2018 još nije prilagođena veličini podataka (25 milijuna zapisa).")
+        analiziraj_vast2018(putanja)
         return
 
     df_kom = database.ucitaj_komunikaciju(putanja)
@@ -67,9 +67,67 @@ def naredba_analiziraj(args):
     print(novi.to_string() if not novi.empty else "Nema.")
 
 
+def _skupina_vast2018(putanja):
+    sc = database.ucitaj_scenarij(putanja)
+    osobe = database.ucitaj_osobe(putanja).set_index("broj")["ime"]
+    clanovi = set(sc["broj"])
+    print("Dohvaćanje zapisa oko skupine...")
+    return clanovi, osobe, skupina.zapisi_oko(putanja, clanovi)
+
+
+def analiziraj_vast2018(putanja):
+    clanovi, osobe, df = _skupina_vast2018(putanja)
+    print(f"\nSumnjiva skupina prema insajderu: {len(clanovi)} osoba")
+    print(f"Zapisa u kojima sudjeluje barem jedan član: {len(df)}")
+    print("Po vrsti:", df["tip"].value_counts().to_dict())
+
+    unutra = df[df["pozivatelj"].isin(clanovi) & df["primatelj"].isin(clanovi)]
+    print(f"Od toga unutar skupine: {len(unutra)}")
+
+    print("\nBliski suradnici (prvih 10 osoba izvan popisa po broju različitih članova s kojima su u kontaktu):")
+    suradnici = skupina.bliski_suradnici(df, clanovi, k=10)
+    suradnici.insert(0, "ime", suradnici.index.map(osobe))
+    print(suradnici.to_string())
+
+    print("\nKontakti unutar skupine po mjesecima:")
+    print(skupina.unutarnji_tijek(df, clanovi).to_string())
+
+    insajder = database.ucitaj_insajder(putanja)
+    kupnje = insajder[insajder["tip"] == "kupnja"].copy()
+    kupnje.insert(1, "kupac", kupnje["pozivatelj"].map(osobe))
+    kupnje.insert(3, "prodavac", kupnje["primatelj"].map(osobe))
+    print("\nSumnjive kupnje prema insajderu:")
+    print(kupnje[["pozivatelj", "kupac", "primatelj", "prodavac", "vrijeme", "izvor"]].to_string(index=False))
+
+    kupci = sorted(set(kupnje.loc[kupnje["izvor"].str.contains("Other_"), "pozivatelj"]))
+    if kupci:
+        print("\nKupci iz ostalih sumnjivih kupnji:")
+        oko_kupaca = skupina.zapisi_oko(putanja, kupci)
+        profili = pd.DataFrame([skupina.profil_osobe(oko_kupaca, k, clanovi) for k in kupci])
+        profili.insert(1, "ime", profili["broj"].map(osobe))
+        print(profili.to_string(index=False))
+
+
+def evaluiraj_vast2018(putanja):
+    clanovi, osobe, df = _skupina_vast2018(putanja)
+    tablica = skupina.izostavi_jednog(df, clanovi)
+    tablica.insert(1, "ime", tablica["clan"].map(osobe))
+    print(f"\nSkup: vast2018")
+    print("Provjera izostavljanjem: svaki član se redom izostavi iz skupine, a ostale osobe se rangiraju")
+    print("po broju različitih preostalih članova s kojima su u kontaktu. Gleda se rang izostavljenog člana.")
+    print(f"\nČlanova: {len(tablica)}")
+    for k in (1, 10, 50):
+        print(f"Izostavljeni član na rangu do {k}: {int((tablica['rang'] <= k).sum())}")
+    print(f"Nije povezan ni s jednim preostalim članom: {int(tablica['rang'].isna().sum())}")
+    print(f"Medijan ranga: {tablica['rang'].median()}, očekivano kod nasumičnog rangiranja: "
+          f"{tablica['ocekivano_slucajno'].median()}")
+    print("\nRezultat po članu:")
+    print(tablica.to_string(index=False))
+
+
 def naredba_evaluiraj(args):
     if args.baza == "vast2018":
-        print("Provjera za vast2018 još nije moguća jer analiza nije prilagođena veličini podataka.")
+        evaluiraj_vast2018(database.BAZE["vast2018"])
         return
 
     tablica, rang, oz = evaluacija.evaluiraj(args.baza, k=args.k)

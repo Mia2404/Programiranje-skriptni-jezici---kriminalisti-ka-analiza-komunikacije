@@ -80,8 +80,11 @@ python main.py ucitaj sve
 python main.py analiziraj --baza vast2008
 python main.py analiziraj --baza montagna
 
+python main.py analiziraj --baza vast2018
+
 python main.py evaluiraj --baza vast2008
 python main.py evaluiraj --baza montagna
+python main.py evaluiraj --baza vast2018
 
 python app.py                      # web sučelje na http://127.0.0.1:5000
 
@@ -102,6 +105,29 @@ Postavke su odabrane unaprijed i jednake su za sve skupove podataka; ne prilago�
 
 Granica za nove brojeve izražena je kao udio razdoblja, a ne kao fiksan broj dana, jer skupovi traju
 različito dugo (VAST 2008 10 dana, VAST 2018 oko 2,6 godina).
+
+## Analiza skupine u VAST 2018
+
+VAST 2018 ima 26 milijuna zapisa i 642 631 osobu, pa se ne analizira cijela mreža, nego podmreža oko
+skupine koju je naveo insajder. Zadatak iz službenog obrasca natjecanja je pronaći skupinu u podacima,
+utvrditi tko je s njom blisko povezan, opisati kako se skupina mijenja kroz vrijeme i provjeriti
+postoje li slične skupine oko ostalih sumnjivih kupnji. Pravila su određena prije pokretanja analize:
+
+| Korak | Pravilo |
+|---|---|
+| podmreža | svi zapisi (pozivi, e-mailovi, sastanci, kupnje) u kojima sudjeluje barem jedan od 20 članova |
+| povezanost sa skupinom | broj različitih članova s kojima je osoba u kontaktu bilo kojim kanalom; kod izjednačenih više ukupnih kontakata sa skupinom; izjednačeni dijele rang |
+| bliski suradnici | prvih 10 osoba izvan popisa po povezanosti (uz sve izjednačene s desetom) |
+| tijek kroz vrijeme | broj kontakata unutar skupine po mjesecima i po vrsti |
+| ostale sumnjive kupnje | za svakog kupca: broj kontakata, broj različitih osoba, kontakti sa skupinom |
+
+Provjera izostavljanjem (`python main.py evaluiraj --baza vast2018`): svaki od 20 članova se redom
+izostavi, ostale osobe se rangiraju po povezanosti s preostalih 19 članova i gleda se rang izostavljenog
+člana. Ako je izostavljeni član visoko rangiran, metoda bi ga pronašla i bez insajderova popisa.
+Za usporedbu se ispisuje očekivani rang kod nasumičnog rangiranja.
+
+Napomena: kod kupnji je primatelj prodavač, pa među bliskim suradnicima može biti prodavač kod kojeg
+je kupovalo više članova skupine.
 
 ## Provjera rezultata (`evaluiraj`)
 
@@ -128,8 +154,7 @@ Za svaku metodu ispisuje se:
 - **Montagna:** "u rješenju" su osobe kojima je sud odredio uhićenje, zatvor ili kućni pritvor te
   osobe u bijegu; "izvan rješenja" su osobe kojima je zahtjev za uhićenje odbijen, za koje nema dovoljno
   dokaza ili koje nisu umiješane; za ostale izvor ne navodi ishod ("nepoznato").
-- **VAST 2018:** 20 osoba s insajderova popisa (provjera još nije moguća jer analiza nije prilagođena
-  veličini podataka).
+- **VAST 2018:** 20 osoba s insajderova popisa; provjera je opisana u sljedećem poglavlju.
 
 Ispisuje se i rang svake osobe iz rješenja po posredništvu, što ne ovisi o odabranom *k*.
 
