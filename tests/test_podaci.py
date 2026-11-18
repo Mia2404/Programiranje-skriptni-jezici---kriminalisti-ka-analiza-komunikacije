@@ -1,5 +1,4 @@
 import csv
-import sqlite3
 from datetime import datetime
 
 import pandas as pd
@@ -106,7 +105,7 @@ def test_vast2018_pretvorba_vremena():
 
 @pytest.mark.skipif(not (DATA_DIR / "vast2018.db").exists(), reason="baza vast2018 nije učitana")
 def test_vast2018_baza_odgovara_izvoru():
-    with sqlite3.connect(DATA_DIR / "vast2018.db") as con:
+    with database.povezi(DATA_DIR / "vast2018.db") as con:
         po_vrsti = dict(con.execute("SELECT tip, COUNT(*) FROM komunikacija GROUP BY tip").fetchall())
         scenarij = con.execute("SELECT COUNT(*) FROM scenarij").fetchone()[0]
         insajder = dict(con.execute("SELECT izvor, COUNT(*) FROM insajder_zapisi GROUP BY izvor").fetchall())
@@ -129,3 +128,13 @@ def test_vast2018_skupina_iz_pisma_postoji_u_imeniku():
     imena = set(indeks["first"].str.strip() + " " + indeks["last"].str.strip())
     assert set(vast2018.SUMNJIVA_SKUPINA) <= imena
     assert len(vast2018.SUMNJIVA_SKUPINA) == 20
+
+
+def test_baza_se_zatvara_nakon_citanja(tmp_path, v2008):
+    putanja = tmp_path / "z.db"
+    database.spremi(putanja, v2008)
+    database.ucitaj_komunikaciju(putanja)
+    database.ucitaj_scenarij(putanja)
+    database.sazetak(putanja)
+    putanja.unlink()
+    assert not putanja.exists()

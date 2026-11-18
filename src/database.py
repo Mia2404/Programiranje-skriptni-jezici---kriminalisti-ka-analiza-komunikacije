@@ -1,4 +1,5 @@
 import sqlite3
+from contextlib import contextmanager
 from pathlib import Path
 
 import pandas as pd
@@ -69,9 +70,15 @@ CREATE INDEX idx_kom_primatelj ON komunikacija(primatelj);
 STUPCI_KOMUNIKACIJE = ["pozivatelj", "primatelj", "vrijeme", "tip", "trajanje_s", "stanica_id", "tezina"]
 
 
-def povezi(putanja: Path) -> sqlite3.Connection:
+@contextmanager
+def povezi(putanja: Path):
     putanja.parent.mkdir(parents=True, exist_ok=True)
-    return sqlite3.connect(putanja)
+    con = sqlite3.connect(putanja)
+    try:
+        with con:
+            yield con
+    finally:
+        con.close()
 
 
 def _vrijeme_u_tekst(df: pd.DataFrame) -> pd.DataFrame:
